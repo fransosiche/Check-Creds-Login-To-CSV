@@ -1,4 +1,4 @@
-<#
+
     .SYNOPSIS
         Get Win-event 4624 and 4625 (Sucess/fail local/rdp login attempts) to parse them in CSV
     .DESCRIPTION
@@ -16,4 +16,4 @@
         Date Coded      : 07/06/2022
     .LINK
 
-#>
+
