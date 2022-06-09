@@ -13,11 +13,11 @@ You have to enable policies to collect 4624 and 4625 logons and apply the policy
 
 Computer Configuration > Policies > Windows Settings > Security Settings > Advanced Audit Policy Configuration > Audit Policies 
 
-a.	System > Audit Security State Change — Passez le à “Success”.
+a.	System > Audit Security State Change —  “Success”.
 
-b.	Logon/Logoff — Mettez “Audit Logon” et “Audit Logoff” à “Success” et “Failure”.
+b.	Logon/Logoff — Put "Audit Logon” and “Audit Logoff” to “Success” and “Failure”.
 
-c.	Logon/Logoff > Audit — Mettez “Other Logon/Logoff Events” à “Success” et “Failure.”
+c.	Logon/Logoff > Audit — Put “Other Logon/Logoff Events” to “Success” and “Failure.”
 
 ### Example
 ```powershell
