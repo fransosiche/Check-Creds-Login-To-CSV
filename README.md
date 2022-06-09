@@ -5,11 +5,11 @@
 
 ### Main Features
 
-Get-Eventlog 4624 and 4625 (Sucess/fail & local/rdp/batch/network... (using NTLM v1 or V2 or Kerberos protocols) logon attempts) to parse them in a CSV file
+Little script to Get-Eventlog 4624 and 4625 (Sucess/fail & local/rdp/batch/network... (using NTLMV1 or V2 or Kerberos protocols) logon attempts) to parse them in a CSV file
 
 ### Prerequisite
 
-You have to enable policy to collect 4624 and 4625 logons and apply the policy to concerned OU :
+You have to enable policies to collect 4624 and 4625 logons and apply the policy to concerned OU :
 
 Computer Configuration > Policies > Windows Settings > Security Settings > Advanced Audit Policy Configuration > Audit Policies 
 
@@ -29,6 +29,10 @@ Invoke-Check-Cred -DCName all -Timestamp 2
 # You can specify only one DC (or multiple like "AD01, AD02", I didn't test that tho)
 Invoke-Check-Cred -DCName AD01
 ```
+
+### Output
+
+![image](https://user-images.githubusercontent.com/33124690/172855703-9076b2ce-b037-4a2d-8728-af824d091c95.png)
 
 ### TODO
 - Try catch
