@@ -5,7 +5,8 @@
 
 ### Main Features
 
-Little script to Get-Eventlog 4624 and 4625 (Sucess/fail)to parse them in a CSV file
+Little script to Get-Eventlog 4624 and 4625 (Sucess/fail) and then parse them into a CSV file. This script aims to give visibility on authentification secrets presents on a specific perimeter.
+
 It collects the different logon types such as : 
 - 2	Interactive (logon at keyboard and screen of system)
 
