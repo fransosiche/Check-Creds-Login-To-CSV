@@ -1,26 +1,28 @@
 <#
     .SYNOPSIS
-        Get-Eventlog 4624 and 4625 (Sucess/fail local/rdp login attempts) to parse them in CSV
+        Get-Eventlog 4624 and 4625 (Sucess/fail local/rdp/batch/network (using NTLM v1 or V2 or Kerberos protocols) logon attempts) to parse them in a CSV file
     .DESCRIPTION
-        This script aim to gives visibility on users credentials used on a specific perimeter
+        This script aims to give visibility on users credentials present on a specific perimeter
     .PARAMETER -DCNAME & -TIMESTAMP (no mandatory, default 1)
         -DCNAME <all> OR <specific name like AD01>
     .EXAMPLE
-        Check-Creds-Login-To-CSV.ps1 -DCNAME AD01 -TIMESTAMP 2
+        Invoke-Check-Cred -DCNAME AD01 -TIMESTAMP 2
 
         Description
         -----------
-        This command will get every event security (login) log present on AD01 from 2 day and parse them to a CSV
+        This script will get every event security logons present on AD01 from 2 day and parse them to a CSV
     .NOTES
         Created by      : François Biron
-        Date Coded      : 07/06/2022
+        Date Coded      : 09/06/2022
 #>
 
+#Global variables
 $Global:DCName;
 $Global:Timestamp;
 $Global:StartDate;
 $Global:DCs;
 $Global:Result_Table = New-Object System.Data.Datatable;
+#Strings
 $Global:Spacing = "`t"
 $Global:PlusLine = "`t[+]"
 $Global:ErrorLine = "`t[-]"
@@ -49,7 +51,7 @@ function ShowBanner
     }
 }
 
-
+#Function to store logons into datatable
 function Store_Logon
 {
     Param(
@@ -61,11 +63,13 @@ function Store_Logon
         [string]$Logontext
     )
 
-    # Logon Successful Events
+    # If event id is sucessfull
     if (($e.EventID -eq $eventIDsucess) -and ($e.ReplacementStrings[8] -eq $logontype))
     {
-        if (-not( $Result_Table.Where({ $_.Username -like $e.ReplacementStrings[5] })))
+        # Checking If event is not already present in the datatable to avoid redondancy
+        if (-not($Result_Table.Where({ $_.Username -like $e.ReplacementStrings[5] -and $_.Type -like $Logontext -and ($_.Protocol -like $e.ReplacementStrings[10] -or $_.Protocol -like $e.ReplacementStrings[14]) })))
         {
+            # Checking if the protocol used is NTLM V2 because Kerberos and NTLM are not in the same place [14] vs [10]
             if ($e.ReplacementStrings[14] -eq 'NTLM V2')
             {
                 [void]$Result_Table.Rows.Add($e.ReplacementStrings[5], $Logontext, "Success", $e.ReplacementStrings[11], $e.ReplacementStrings[18], $e.ReplacementStrings[14])
@@ -76,10 +80,10 @@ function Store_Logon
             }
         }
     }
-
+    # Same stuff for fail event
     if (($e.EventID -eq $eventIDfail) -and ($e.ReplacementStrings[8] -eq $logontype))
     {
-        if (-not( $Result_Table.Where({ $_.Username -like $e.ReplacementStrings[5] })))
+        if (-not($Result_Table.Where({ $_.Username -like $e.ReplacementStrings[5] -and $_.Type -like $Logontext -and ($_.Protocol -like $e.ReplacementStrings[10] -or $_.Protocol -like $e.ReplacementStrings[14]) })))
         {
             if ($e.ReplacementStrings[14] -eq 'NTLM V2')
             {
@@ -94,7 +98,7 @@ function Store_Logon
     $Global:Result_Table = $Result_Table
 }
 
-#Export Datatable to CSV
+# Export Datatable to CSV
 function Export-Table-To-CSV
 {
     Param(
@@ -103,8 +107,10 @@ function Export-Table-To-CSV
     Write-Info "Going to write result in CSV..."
     $Result_Table | Export-CSV -Path .\Auth_User_$((Get-Date).ToString('MM-dd-yyyy_hh-mm-ss') ).csv -Delimiter ';'
     Write-Good "CSV Auth_User_$((Get-Date).ToString('MM-dd-yyyy_hh-mm-ss') ).csv exported with success (csv is located at the same path as this script) !"
+    Write-Good "Have a good day :)"
 }
 
+# Getting timestamp, checking if it's present and storing it as a datetime for later
 function Get-Timestamp
 {
     Param(
@@ -119,6 +125,7 @@ function Get-Timestamp
     $Global:StartDate = (get-date).AddDays(-$Timestamp)
 }
 
+# Getting DCName, checking if the param is ok and storing it for later
 function Get-DC
 {
     Param(
@@ -145,6 +152,7 @@ function Get-DC
 
 }
 
+# Getting all the log from the DC(s) and crawling through events
 function Get-and-store-logs
 {
     Param(
@@ -159,10 +167,10 @@ function Get-and-store-logs
     [void]$Result_Table.Columns.Add("IP Address")
     [void]$Result_Table.Columns.Add("Protocol")
 
-    # Store successful logon events from security logs with the specified dates and workstation/IP in an array
+    # Store logon events from security logs with the specified dates and workstation/IP in an array
     foreach ($DC in $DCs)
     {
-        $slogonevents = Get-Eventlog -LogName Security -ComputerName $DC.Hostname -after $Start_Date | where { ($_.eventID -eq 4624) -or ($_.eventID -eq 4625) }
+        $slogonevents = Get-Eventlog -LogName Security -ComputerName $DC.Hostname -after $Start_Date | Where-Object { ($_.eventID -eq 4624) -or ($_.eventID -eq 4625) }
     }
     $TotalItems = $slogonevents.Count
     $CurrentItem = 0
@@ -185,6 +193,8 @@ function Get-and-store-logs
     }
     $Global:Result_Table = $Result_Table;
 }
+
+# Main function that call all other one
 function Invoke-Check-Cred
 {
     #getting needed parameters
